@@ -1,0 +1,306 @@
+﻿@{
+    string walletAddress = "0x";
+    string contractAddress = "0x";
+    //set token price
+    decimal tokenPrice = .1m;
+    decimal bnbPrice = 300m;
+    decimal tokenPrice_bnb = ((tokenPrice / bnbPrice)); 
+
+    string bscScanUrl = "https://testnet.bscscan.com";
+    string _tokenName = "XYROLD Token";
+}
+
+<!-- Main container starts -->
+@* UI html code here s*@
+<div class="row">
+    <div class="col-md-12">
+        <h4 class="text-template-primary mb-20">Token Pre-Sale</h4>
+    </div>
+    <div class="col-md-5">
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm overflow-hidden mb-4">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-auto text-center">
+                            </div>
+                            <div class="col pl-0">
+                                <h4>
+                                    Token Balance :
+                                    <span class="display_rcktoken">-</span> @_tokenName
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0   mb-20">
+            <div class="card-body ">
+                <h3 class="font-weight-normal text-center mb-4">Buy @_tokenName</h3>
+                <div class="text-center text-white f-26">1 @_tokenName = $@tokenPrice</div>
+                <div class="text-center text-gray">1 @_tokenName = @((tokenPrice / bnbPrice).ToString("#,##0.########")) BNB</div>
+                <hr />
+                <div class="row">
+                    <div class="col-md-6">
+                        <label>@_tokenName </label>
+                        @*<input type="text" disabled class="form-control bg-primary" min="50000" id="buy_totaltoken" />*@
+                        <input type="text" class="form-control" min="0" id="buy_totaltoken" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>BNB</label>
+                        @*<input type="text" disabled class="form-control bg-primary" value="@((500000 * tokenPrice_bnb).ToString(" #,##0.########"))" id="buy_totalbnb" />*@
+                        <input type="text" class="form-control btn-primary" value="0" id="buy_totalbnb" />
+                    </div>
+                </div>
+                <div class="mb-2 mt-20">
+                    <button type="submit" disabled class="btn btn-primary btn-block" id="btnBuyToken">Connecting to Wallet</button>
+                </div>
+                <div class="alert border-primary text-primary mt-10 noWallet">
+                    <i class="far fa-exclamation-triangle"></i> Crypto wallet is not connected.
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-5 text-template-primary">
+        <div class="alert border-primary text-primary text-center">
+            <div class="f-18">@_tokenName Official Contract Address</div>
+            <div>
+                <a href="@bscScanUrl/token/@contractAddress" target="_blank">@contractAddress <i class="far fa-external-link"></i></a>
+            </div>
+        </div>
+        <table class="table">
+            <tr>
+                <td>Blockchain</td>
+                <td>Binance Smart Chain (BEP-20)</td>
+            </tr>
+            <tr>
+                <td>Token Name</td>
+                <td>
+                    <div class="row">
+                        <div class="col">
+                            @_tokenName
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-outline-primary btn-sm" id="btnAddTokenToMM">Add Token to Metamask</button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>Pre-Sell Supply</td>
+                <td>20% (200K / 1M)</td>
+            </tr>
+            <tr>
+                <td>Token Price</td>
+                <td>USD @tokenPrice</td>
+            </tr>
+            <tr>
+                <td>Your Wallet Address</td>
+                <td>
+                    <span class="show_walletAddress hideThis">@walletAddress</span>
+                </td>
+            </tr>
+            <tr>
+                <td>Your BNB Balance</td>
+                <td>
+                    <span class="display_bnb_balance">-</span> BNB
+                </td>
+            </tr>
+            <tr>
+                <td>Current BNB Price</td>
+                <td>$@bnbPrice.ToString("#,##0.###")</td>
+            </tr>
+        </table>
+
+    </div>
+</div>
+@Html.Partial("_loading")
+
+
+
+@section scripts{
+    <script src="~/Content/js/presale.js"></script>
+    <script>
+        //current bnb price in USD
+        const _bnb_usd = "@bnbPrice";
+
+        //price per token in bnb
+        const _bnb_token = "@tokenPrice_bnb";
+
+        //amount of tokens per 1 bnb
+        const _token_bnb = "@(bnbPrice / tokenPrice)";
+
+        //logged-in ... user wallet address
+        const _address = "0x";
+
+            let _bnbBalance = 0;
+
+            //page load
+        window.addEventListener('load', async function () {
+            //1. load contract functions
+            await getAbi();
+
+            //2. initialized smart contract with user wallet and web3 functions
+            await initContract();
+
+            //3. (optional) validate wallet network by checking the chain ID
+            await getChainInfo();
+
+            //4. set contract event brodcast functions
+            contractResponse(_contract.main);
+
+            //5. get wallet address from the current selected account
+            await getAccount();
+
+            //6. get token balance
+            //simple way to check if you can interact with smart contract functions
+            //if so, you are ready to go...
+            await getTokenBalance().then(function (res) {
+                //connected to smart contract
+                //display the value
+                $(".display_rcktoken").text(res);
+
+                //enable buy button
+                $("#btnBuyToken").prop("disabled", false).text("BUY Token");
+                $(".noWallet, .show_walletAddress").toggle();
+            });
+
+            //7. get bnb balance
+            await getBnbBalance().then(function (res) {
+                //display the value
+                _bnbBalance = res;
+                $(".display_bnb_balance").text(res);
+                $("#buy_totaltoken").trigger("change");
+            });
+
+        });
+
+            //token user input - compute total fee in bnb
+        $("#buy_totaltoken").keyup(function () {
+            this.val = $(this).val();
+            this.bnb = Number(this.val) * Number(_bnb_token);
+
+            $("#buy_totalbnb").val(this.bnb.toFixed(8));
+        });
+
+            //bnb user input - compute total equivalent tokens
+        $("#buy_totalbnb").keyup(function () {
+            this.val = $(this).val();
+            this.rck = Number(this.val) * Number(_token_bnb);
+
+            $("#buy_totaltoken").val(this.rck.toFixed(8));
+        });
+
+
+            //easy button to add token contract to metamask wallet
+        $("#btnAddTokenToMM").click(function () {
+            addTokenToWallet();
+        })
+
+            //buy token
+        $("#btnBuyToken").on('click', async () => {
+
+            //get token amount - user input
+            const _token = $("#buy_totaltoken").val();
+
+            //compute the fee value
+            let _bnb = Number(_token) * Number(_bnb_token);
+
+            if (_token <= 0 || _bnb <= 0) {
+                return;
+            }
+
+            //validate user bnb balance
+            if (_bnbBalance < _bnb) {
+                swal("Insufficient BNB Balance", "Please send BNB fund to your wallet.", "warning");
+                return;
+            }
+
+            //set minimum amount to buy
+            const _min = 0.01;
+
+            if (_bnb <= _min) {
+                swal("Minimum Purchase", "The minimum purchase allowed is " + _min + " BNB", "warning");
+                return;
+            }
+
+            $("#btnBuyToken").prop("disabled", true);
+
+            const _validate = await validateAddress(_address);
+            if (_validate == true) {
+
+                //if all above pre-conditions have met,
+                //then it will proceed to request to sign the transaction with user's crypto wallet
+                buyToken(_token, _bnb)
+                    .then(function (tx) {
+                        if (tx === false) {
+                            $("#btnBuyToken").prop("disabled", false);
+                        } else {
+                            //save activity log
+                            //$.post();
+
+                            //display some web UI while processing....
+                            $("#modalLoading").modal("show");
+                            $(".loading-custom-msg").show();
+                            const _txHashUrl = _contract.bscScan + "/tx/" + tx.hash;
+                            $(".loading-msg").html("<h3>Buying Tokens</h3>Submitted to Blockchain!<br/><a href = '" + _txHashUrl + "' target = '_blank'>View Transaction <i class='far fa-external-link'></i></a>");
+                        }
+                    });
+            } else {
+                $("#btnBuyToken").prop("disabled", false);
+                swal("Wallet Validation", "Your connected wallet is different from your account.", "warning");
+            }
+        });
+
+            //contract buy function
+        async function buyToken(_token, _bnb) {
+
+            //payload : fee (bnb)
+            const overrides = {
+                value: ethers.utils.parseEther(_bnb.toString())
+            };
+            //call sale function in smart contract with token value payload
+            const tx = await _contract.sign.sale(ethers.utils.parseEther(_token), overrides)
+                .then(function (res) {
+                    return res;
+                })
+                .catch(function (err) {
+
+                    //handle some error here... or if transaction has been cancelled by user
+                    if (err.codex !== undefined) {
+                        //swal("Transaction", "Something went wrong. Please try again later.", "error");
+                    } else {
+                        swal("Transaction Failed", "Please try again later.", "error");
+                    }
+                    return false;
+                });
+            return (tx);
+        }
+
+
+            //contract event listeners
+        function contractResponse(_myContract) {
+            _myContract.on("TokenSale", (_owner, _amount, _bnb, event) => {
+                if (_owner.toLowerCase() === accounts[0].toLowerCase()) {
+                    let _tokens = (Number(_amount) / oneToken);
+                    $("#modalLoading").modal("hide");
+                    swal({
+                        title: "Purchase Complete", text: _tokens + " tokens added to your balance.", type: "success",
+                    }).then(function (result) {
+                        if (true) {
+                            //redirect page
+                            window.location = "/account/buytokens";
+                        }
+                    })
+                }
+            });
+        }
+
+
+
+    </script>
+
+}
