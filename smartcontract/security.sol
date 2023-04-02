@@ -29,7 +29,7 @@ function tokensale(uint256 _amount,  uint256 _timeNonce, bytes32 xData ) public 
         //i am using c# to generate signature hash on the backend 
         //you can also use ethers.js via nodejs
         
-        bytes32 digest = keccak256(abi.encodePacked(_amount, msg.value, msg.sender, block.timestamp, secretKey));
+        bytes32 digest = keccak256(abi.encodePacked(_amount, msg.value, msg.sender, _timeNonce, secretKey));
         require(digest == xData, "invalid request");
 
         //the purpose of this process, is to verify the request payloads are legit
