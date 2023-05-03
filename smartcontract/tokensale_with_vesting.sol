@@ -18,7 +18,7 @@ contract TestController{
 
     bool public is_preselling;
     address payable owner;
-    address payable tokenSource = payable(0x3F4a42Ac798CbFdDdC1eaA5C9715eABcfBC0b448); //{tokenAddress};
+    address payable tokenSource = payable(your wallet address); 
     address payable fundreceiver;
     uint256 soldTokens;
     uint256 receivedFunds;
