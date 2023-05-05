@@ -15,13 +15,22 @@ contract TestController{
 
     bool public is_preselling;
     address payable owner;
-    address payable tokenSource = {tokenAddress};
+    
+    //a wallet address where the token will be taken from when someone buys... 
+    //any wallet address that holds enough supply for the sale
+    address payable tokenSource = payable(tokenAddress);
+    
+    //a wallet address of your choice... 
+    //this will receive the native asset or coin of network (bnb / ether...etc)
     address payable fundreceiver;
+    
+    
     uint256 soldTokens;
     uint256 receivedFunds;
-
+    
+    //upon deployment set the contract address of the token
     constructor(IToken _tokenAddress)  {
-        Token = _tokenAddress;
+        Token = _tokenAddress; 
         owner = payable(msg.sender);
         fundreceiver = owner;
         is_preselling = true;
